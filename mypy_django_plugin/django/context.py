@@ -45,12 +45,15 @@ def temp_environ():
         os.environ.update(environ)
 
 
-def initialize_django(settings_module: str) -> Tuple['Apps', 'LazySettings']:
+def initialize_django(settings_module: str, configuration: Optional[str] = None) -> Tuple['Apps', 'LazySettings']:
     with temp_environ():
         os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
         # add current directory to sys.path
         sys.path.append(os.getcwd())
+
+        if configuration is not None:
+            os.environ['DJANGO_CONFIGURATION'] = configuration
 
         def noop_class_getitem(cls, key):
             return cls
@@ -67,7 +70,13 @@ def initialize_django(settings_module: str) -> Tuple['Apps', 'LazySettings']:
         apps.get_swappable_settings_name.cache_clear()  # type: ignore
 
         if not settings.configured:
-            settings._setup()
+            # we are not using django configuration
+            if configuration is None:
+                settings._setup()
+            else:
+                from configurations import importer  # type: ignore
+                importer.install(check_options=True)
+                settings._setup()
 
         apps.populate(settings.INSTALLED_APPS)
 
@@ -82,10 +91,11 @@ class LookupsAreUnsupported(Exception):
 
 
 class DjangoContext:
-    def __init__(self, django_settings_module: str) -> None:
+    def __init__(self, django_settings_module: str, django_configuration: Optional[str] = None) -> None:
         self.django_settings_module = django_settings_module
+        self.django_configuration = django_configuration
 
-        apps, settings = initialize_django(self.django_settings_module)
+        apps, settings = initialize_django(self.django_settings_module, self.django_configuration)
         self.apps_registry = apps
         self.settings = settings
 
