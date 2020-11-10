@@ -6,6 +6,7 @@ from typing import (
     TYPE_CHECKING, Dict, Iterable, Iterator, Optional, Set, Tuple, Type, Union,
 )
 
+from django.contrib import admin
 from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.base import Model
@@ -59,6 +60,9 @@ def initialize_django(settings_module: str) -> Tuple['Apps', 'LazySettings']:
 
         models.QuerySet.__class_getitem__ = classmethod(noop_class_getitem)  # type: ignore
         models.Manager.__class_getitem__ = classmethod(noop_class_getitem)  # type: ignore
+        admin.ModelAdmin.__class_getitem__ = classmethod(noop_class_getitem)  # type: ignore
+        admin.TabularInline.__class_getitem__ = classmethod(noop_class_getitem)  # type: ignore
+        admin.StackedInline.__class_getitem__ = classmethod(noop_class_getitem)  # type: ignore
 
         from django.conf import settings
         from django.apps import apps
